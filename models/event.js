@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const Schema = mongoose.Schema;// object constructor function
+const Schema = mongoose.Schema; // object constructor function
 
 const eventSchema = new Schema({
   title: {
