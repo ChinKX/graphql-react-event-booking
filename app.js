@@ -9,16 +9,19 @@
 
 const express = require('express');
 const bodyParser = require('body-parser');
-const { graphqlHTTP  } = require('express-graphql');
+const { graphqlHTTP } = require('express-graphql');
 const { buildSchema } = require('graphql');
+const mongoose = require('mongoose');
+const Event = require('./models/event');
 
 const app = express();
-const events = [];
 
 app.use(bodyParser.json());
 
-app.use('/graphql', graphqlHTTP({
-  schema: buildSchema(`
+app.use(
+  '/graphql',
+  graphqlHTTP({
+    schema: buildSchema(`
     type Event {
       _id: ID!
       title: String!
@@ -46,26 +49,58 @@ app.use('/graphql', graphqlHTTP({
       query: RootQuery
       mutation: RootMutation
     }
-  `),// define supported queries (graphql schema object),
-  rootValue: {
-    events: () => {
-      return events;
-    },
-    createEvent: (args) => {
-      const event = {
-        _id: Math.random().toString(),
-        title: args.eventInput.title,
-        description: args.eventInput.description,
-        price: +args.eventInput.price,
-        date: args.eventInput.date
-      };
-      events.push(event);
-      return event;
-    }
-  },// define the logic to process a particular query (bundle of all resolvers)
-  graphiql: true
-}));
+  `), // define supported queries (graphql schema object),
+    rootValue: {
+      events: () => {
+        return Event.find().then(events =>
+          events.map(event => ({
+            ...event._doc,
+            _id: event.id
+          }))
+        ).catch(error => {
+          console.log(error);
+          throw error;
+        });
+      },
+      createEvent: (args) => {
+        const event = new Event({
+          title: args.eventInput.title,
+          description: args.eventInput.description,
+          price: +args.eventInput.price,
+          date: new Date(args.eventInput.date)
+        });
+        return event.save().then(result => ({
+          ...result._doc,
+          _id: result.id
+        })).catch(error => {
+          console.log(error);
+          throw error;
+        });
+      }
+    }, // define the logic to process a particular query (bundle of all resolvers)
+    graphiql: true
+  })
+);
 
-app.listen(3000, () => {
-  console.log('App listening at port 3000...');
+mongoose.connect(
+  `mongodb+srv://${process.env.MONGO_USER}:${process.env.MONGO_PASSWORD}@cluster1.quvat.mongodb.net/${process.env.MONGO_DB}?retryWrites=true&w=majority`,
+  { useNewUrlParser: true, useUnifiedTopology: true }
+).then(_ =>
+  app.listen(3000, () => {
+    console.log('App listening at port 3000...');
+  })
+).catch(error => {
+  console.log(error);
 });
+
+// mutation {
+//   createEvent(eventInput: {
+//     title: "Testing",
+//     description:"Testing description",
+//     price: 6,
+//     date: "2020-07-22T08:32:54.823Z"
+//   }) {
+//     _id
+//     title
+//   }
+// }
