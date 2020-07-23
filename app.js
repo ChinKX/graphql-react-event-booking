@@ -14,10 +14,12 @@ const mongoose = require('mongoose');
 
 const graphQlSchema = require('./graphql/schema/index');
 const graphQlResolvers = require('./graphql/resolvers/index');
+const auth = require('./middleware/auth');
 
 const app = express();
 
 app.use(bodyParser.json());
+app.use(auth);
 
 app.use(
   '/graphql',
@@ -33,11 +35,11 @@ mongoose
     `mongodb+srv://${process.env.MONGO_USER}:${process.env.MONGO_PASSWORD}@cluster1.quvat.mongodb.net/${process.env.MONGO_DB}?retryWrites=true&w=majority`,
     { useNewUrlParser: true, useUnifiedTopology: true }
   )
-  .then((_) =>
+  .then(_ =>
     app.listen(3000, () => {
       console.log('App listening at port 3000...');
     })
   )
-  .catch((error) => {
+  .catch(error => {
     console.log(error);
   });
