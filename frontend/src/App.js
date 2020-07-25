@@ -37,7 +37,6 @@ class App extends Component {
           <main className='main-content'>
             <Switch>
               {/* Use exact to avoid infinite redirection loop i.e. only redirect when the exact path matches */}
-              {!this.state.token && <Redirect from='/' to='/auth' exact />}
               {this.state.token && <Redirect from='/' to='/events' exact />}
               {this.state.token && <Redirect from='/auth' to='/events' />}
               {!this.state.token && <Route path='/auth' component={AuthPage} />}
@@ -45,6 +44,7 @@ class App extends Component {
               {this.state.token && (
                 <Route path='/bookings' component={BookingsPage} />
               )}
+              {!this.state.token && <Redirect to='/auth' exact />}
             </Switch>
           </main>
         </AuthContext.Provider>

@@ -92,11 +92,11 @@ class AuthPage extends Component {
     return (
       <form className='auth-form' onSubmit={this.submitHandler}>
         <div className='form-control'>
-          <lable for='email'>E-Mail</lable>
+          <label htmlFor='email'>E-Mail</label>
           <input type='email' id='email' ref={this.emailEl} />
         </div>
         <div className='form-control'>
-          <lable for='password'>Password</lable>
+          <label htmlFor='password'>Password</label>
           <input type='password' id='password' ref={this.passwordEl} />
         </div>
         <div className='form-actions'>
