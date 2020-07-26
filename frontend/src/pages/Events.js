@@ -13,6 +13,7 @@ class EventsPage extends Component {
     isLoading: false,
     selectedEvent: null
   };
+  isActive = true;
 
   static contextType = AuthContext;
 
@@ -26,6 +27,10 @@ class EventsPage extends Component {
 
   componentDidMount() {
     this.fetchEvents();
+  }
+
+  componentWillUnmount() {
+    this.isActive = false;
   }
 
   startCreateEventHandler = () => {
@@ -143,11 +148,15 @@ class EventsPage extends Component {
       })
       .then(resData => {
         const events = resData.data.events;
-        this.setState({ events, isLoading: false });
+        if (this.isActive) {
+          this.setState({ events, isLoading: false });
+        }
       })
       .catch(error => {
         console.log(error);
-        this.setState({ isLoading: false });
+        if (this.isActive) {
+          this.setState({ isLoading: false });
+        }
       });
   };
 
@@ -163,7 +172,46 @@ class EventsPage extends Component {
     });
   };
 
-  bookEventHandler = () => {};
+  bookEventHandler = () => {
+    if (!this.context.token) {
+      this.setState({ selectedEvent: null });
+      return;
+    }
+    const requestBody = {
+      query: `
+        mutation {
+          bookEvent(eventId: "${this.state.selectedEvent._id}") {
+            _id
+            createdAt
+            updatedAt
+          }
+        }
+      `
+    };
+
+    fetch('http://localhost:8000/graphql', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer ' + this.context.token
+      },
+      body: JSON.stringify(requestBody)
+    })
+      .then(res => {
+        if (res.status !== 200 && res.status !== 201) {
+          throw new Error('Failed!');
+        }
+        return res.json();
+      })
+      .then(resData => {
+        console.log(resData);
+        this.setState({ selectedEvent: null });
+      })
+      .catch(error => {
+        console.log(error);
+        this.setState({ isLoading: false });
+      });
+  };
 
   render() {
     return (
@@ -209,7 +257,7 @@ class EventsPage extends Component {
             canConfirm
             onCancel={this.modalCancelHandler}
             onConfirm={this.bookEventHandler}
-            confirmText='Book'
+            confirmText={this.context.token ? 'Book' : 'Confirm'}
           >
             <h1>{this.state.selectedEvent.title}</h1>
             <h2>
