@@ -3,16 +3,22 @@ const User = require('../../models/user');
 const { dateToString } = require('../../helpers/date');
 const DataLoader = require('dataloader');
 
+let eventLoader;
+let userLoader;
+
 // 1. DataLoader needs an array of identifiers
 // 2. Merge all the identifiers received within single tick of event loop
 // 3. Make a batch request and then split the results for diff parts of the app
-const eventLoader = new DataLoader(eventIds => {
-  return events(eventIds);
-});
+// NOTE: Reinitialize data loaders to prevent from accessing outdated cache
+const createDataLoaders = () => {
+  eventLoader = new DataLoader(eventIds => {
+    return events(eventIds);
+  });
 
-const userLoader = new DataLoader(userIds => {
-  return User.find({ _id: { $in: userIds } });
-});
+  userLoader = new DataLoader(userIds => {
+    return User.find({ _id: { $in: userIds } });
+  });
+};
 
 const events = async eventIds => {
   try {
@@ -29,10 +35,10 @@ const user = async userId => {
     return {
       ...user._doc,
       _id: user.id,
-      createdEvents: eventLoader.loadMany.bind(
-        this,
-        user._doc.createdEvents.map(eventId => eventId.toString())
-      )
+      createdEvents: () =>
+        eventLoader.loadMany(
+          user._doc.createdEvents.map(eventId => eventId.toString())
+        )
     };
   } catch (error) {
     throw error;
@@ -73,3 +79,4 @@ const transformBooking = booking => {
 // exports.event = event;
 exports.transformEvent = transformEvent;
 exports.transformBooking = transformBooking;
+exports.createDataLoaders = createDataLoaders;

@@ -15,6 +15,7 @@ const mongoose = require('mongoose');
 const graphQlSchema = require('./graphql/schema/index');
 const graphQlResolvers = require('./graphql/resolvers/index');
 const auth = require('./middleware/auth');
+const { createDataLoaders } = require('./graphql/resolvers/merge');
 
 const app = express();
 
@@ -30,14 +31,14 @@ app.use((req, res, next) => {
 });
 app.use(auth);
 
-app.use(
-  '/graphql',
-  graphqlHTTP({
+app.use('/graphql', (req, res, next) => {
+  createDataLoaders();
+  return graphqlHTTP({
     schema: graphQlSchema, // define supported queries (graphql schema object),
     rootValue: graphQlResolvers, // define the logic to process a particular query (bundle of all resolvers)
     graphiql: true
-  })
-);
+  })(req, res);
+});
 
 mongoose
   .connect(
